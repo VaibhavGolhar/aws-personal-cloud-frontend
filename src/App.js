@@ -210,6 +210,30 @@ export default function PayAsYouGoCloudApp() {
     setPathStack(pathStack.slice(0, -1));
   }
 
+  async function handleView(file) {
+  try {
+    const response = await fetch(`http://localhost:8080/api/files/${file.id}/download`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch file: ${response.statusText}`);
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    window.open(url, "_blank"); // open preview in new tab
+
+    // optional cleanup after some time
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  } catch (err) {
+    console.error("Error viewing file:", err);
+    alert("Unable to preview file.");
+  }
+}
+
   // --- Auth UI ---
   if (!token)
     return (
@@ -301,10 +325,11 @@ export default function PayAsYouGoCloudApp() {
               {fileList.map((file) => (
                 <li key={file.id} className="file-item">
                   <span>{file.filename.split("/").pop()}</span>
-                  <div>
-                    <button onClick={() => handleDownload(file)}>⬇</button>
-                    <button onClick={() => handleFileDelete(file.id)}>🗑</button>
-                  </div>
+                  <div className="file-actions">
+                    <button onClick={() => handleView(file)} title="Quick view">👁</button>
+                    <button onClick={() => handleDownload(file)} title="Download">⬇</button>
+                    <button onClick={() => handleFileDelete(file.id)} title="Delete">🗑</button>
+</div>
                 </li>
               ))}
               {folders.length === 0 && fileList.length === 0 && <p>No files or folders here.</p>}
