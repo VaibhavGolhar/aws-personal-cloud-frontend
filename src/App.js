@@ -154,6 +154,25 @@ export default function PayAsYouGoCloudApp() {
     }
   }
 
+  // --- 🔥 Delete Folder (new feature) ---
+  async function handleDeleteFolder(folder) {
+    const confirmDelete = window.confirm(`Delete folder "${folder}" and all its contents?`);
+    if (!confirmDelete) return;
+
+    const folderPrefix = currentPath ? `${currentPath}/${folder}/` : `${folder}/`;
+    const toDelete = files.filter((f) => f.filename.startsWith(folderPrefix));
+
+    try {
+      for (const f of toDelete) {
+        await apiFetch(`/files/${f.id}`, { method: "DELETE" }, token);
+      }
+      await refreshFiles();
+    } catch (err) {
+      console.error("Error deleting folder:", err);
+      setError(err.message);
+    }
+  }
+
   // --- File upload ---
   async function handleFileUpload(e) {
     const file = e.target.files[0];
@@ -265,8 +284,15 @@ export default function PayAsYouGoCloudApp() {
 
             <div className="folder-list">
               {folders.map((folder) => (
-                <div key={folder} className="folder-item" onClick={() => enterFolder(folder)}>
-                  📁 {folder}
+                <div key={folder} className="folder-item">
+                  <span onClick={() => enterFolder(folder)}>📁 {folder}</span>
+                  <button
+                    className="delete-folder-btn"
+                    onClick={() => handleDeleteFolder(folder)} // 🔥 added delete icon
+                    title="Delete folder"
+                  >
+                    🗑
+                  </button>
                 </div>
               ))}
             </div>
