@@ -1,0 +1,131 @@
+body {
+  margin: 0;
+  font-family: "Inter", sans-serif;
+  background: #f5f6fa;
+  color: #222;
+}
+
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.auth-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  text-align: center;
+  width: 320px;
+}
+
+.auth-card input {
+  width: 100%;
+  padding: 10px;
+  margin: 6px 0;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.auth-card button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 8px;
+  border: none;
+  background: #0078ff;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.auth-card button:hover {
+  background: #0062d6;
+}
+
+.link-btn {
+  background: none;
+  color: #0078ff;
+  border: none;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.error {
+  color: red;
+}
+
+.main-container {
+  max-width: 900px;
+  margin: 2rem auto;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+header h2 {
+  margin: 0;
+}
+
+nav button {
+  margin: 0 6px;
+  background: none;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 6px;
+}
+
+nav button.active {
+  background: #0078ff;
+  color: white;
+}
+
+.logout-btn {
+  background: #ff4d4d;
+  border: none;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.files-tab input[type="file"] {
+  margin: 10px 0;
+}
+
+.file-list {
+  list-style: none;
+  padding: 0;
+}
+
+.file-item {
+  display: flex;
+  justify-content: space-between;
+  background: #f9f9f9;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.file-item button {
+  margin-left: 6px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-size: 1.1rem;
+}
+
+.billing-tab, .profile-tab {
+  line-height: 1.8;
+}
