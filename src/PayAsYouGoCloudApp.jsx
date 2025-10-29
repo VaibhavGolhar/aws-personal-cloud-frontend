@@ -13,6 +13,7 @@ export default function PayAsYouGoCloudApp() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [pathStack, setPathStack] = useState([]); // folder path navigation
 
   // --- Authentication ---
   async function handleLogin(e) {
@@ -64,8 +65,7 @@ export default function PayAsYouGoCloudApp() {
       try {
         const me = await apiFetch("/auth/me", {}, token);
         setUser(me);
-        const f = await apiFetch("/files", {}, token);
-        setFiles(f);
+        await refreshFiles();
         const b = await apiFetch("/billing/current", {}, token);
         setBilling(b);
       } catch (err) {
@@ -75,15 +75,81 @@ export default function PayAsYouGoCloudApp() {
     })();
   }, [token]);
 
+  async function refreshFiles() {
+  try {
+    const f = await apiFetch("/files", {}, token);
+    console.log("Fetched files:", f);
+    setFiles(f);
+  } catch (err) {
+    console.error("Failed to fetch files:", err);
+  }
+}
+
+  // --- File & folder helpers ---
+  const currentPath = pathStack.join("/");
+
+  // Build hierarchical structure
+  const visibleFiles = files.filter(f => !f.filename.endsWith("/dummyfile.txt"));
+  const foldersSet = new Set();
+  const fileList = [];
+
+  visibleFiles.forEach(f => {
+    const parts = f.filename.split("/");
+    if (parts.length > 1) {
+      // it's inside folder(s)
+      if (currentPath) {
+        const pathParts = currentPath.split("/");
+        if (parts.slice(0, pathParts.length).join("/") === currentPath) {
+          const nextPart = parts[pathParts.length];
+          if (nextPart && !nextPart.endsWith(".txt") && parts.length > pathParts.length + 1) {
+            foldersSet.add(nextPart);
+          } else if (nextPart && parts.length === pathParts.length + 1) {
+            fileList.push(f);
+          }
+        }
+      } else {
+        foldersSet.add(parts[0]);
+      }
+    } else {
+      if (!currentPath) fileList.push(f);
+    }
+  });
+
+  const folders = Array.from(foldersSet);
+
+  // --- Create Folder ---
+  async function handleCreateFolder() {
+    const folder = prompt("Enter new folder name:");
+    if (!folder) return;
+    if (folder.includes("/") || folder.includes("//")) {
+      alert("Folder name cannot contain '/' characters");
+      return;
+    }
+
+    const prefix = currentPath ? `${currentPath}/${folder}` : folder;
+    const form = new FormData();
+    // create an *empty* dummy.txt file to mark the folder
+    const dummy = new Blob([], { type: "text/plain" });
+    form.append("file", dummy, `${prefix}/dummyfile.txt`);
+    try {
+      await apiFetch("/files", { method: "POST", body: form }, token);
+      await refreshFiles();
+    } catch (err) {
+      console.error(err);
+      setError(err.message);
+    }
+  }
+
   // --- File upload ---
   async function handleFileUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
     const form = new FormData();
-    form.append("file", file);
+    const filePath = currentPath ? `${currentPath}/${file.name}` : file.name;
+    form.append("file", file, filePath);
     try {
-      const uploaded = await apiFetch("/files", { method: "POST", body: form }, token);
-      setFiles([uploaded, ...files]);
+      await apiFetch("/files", { method: "POST", body: form }, token);
+      await refreshFiles();
     } catch (err) {
       setError(err.message);
     }
@@ -92,7 +158,7 @@ export default function PayAsYouGoCloudApp() {
   async function handleFileDelete(id) {
     try {
       await apiFetch(`/files/${id}`, { method: "DELETE" }, token);
-      setFiles(files.filter(f => f.id !== id));
+      await refreshFiles();
     } catch (err) {
       setError(err.message);
     }
@@ -102,11 +168,21 @@ export default function PayAsYouGoCloudApp() {
     window.open(`http://localhost:8080/api/files/${file.id}/download`, "_blank");
   }
 
+  // --- Navigation ---
+  function enterFolder(name) {
+    setPathStack([...pathStack, name]);
+  }
+
+  function goBack() {
+    setPathStack(pathStack.slice(0, -1));
+  }
+
+  // --- Auth UI ---
   if (!token)
     return (
-      <div className="auth-container">
+      <div className="auth-container fade-in">
         <div className="auth-card">
-          <h1>Welcome back</h1>
+          <h1>Welcome</h1>
           <p>Pay-as-you-go personal cloud — inspired by Google Drive.</p>
           {error && <p className="error">{error}</p>}
           <form onSubmit={handleLogin}>
@@ -135,8 +211,9 @@ export default function PayAsYouGoCloudApp() {
       </div>
     );
 
+  // --- Main UI ---
   return (
-    <div className="main-container">
+    <div className="main-container fade-in">
       <header>
         <h2>☁ Pay-as-you-go Cloud</h2>
         <nav>
@@ -155,21 +232,42 @@ export default function PayAsYouGoCloudApp() {
         </button>
       </header>
 
-      <main>
+      <main className="tab-content fade-in">
         {activeTab === "files" && (
           <section className="files-tab">
-            <h3>Your Files</h3>
-            <input type="file" onChange={handleFileUpload} />
+            <div className="folder-path">
+              {pathStack.length > 0 && (
+                <button className="back-btn" onClick={goBack}>
+                  ⬅ Back
+                </button>
+              )}
+              <span>/{pathStack.join("/")}</span>
+            </div>
+
+            <div className="file-controls">
+              <input type="file" onChange={handleFileUpload} />
+              <button onClick={handleCreateFolder}>+ New Folder</button>
+            </div>
+
+            <div className="folder-list">
+              {folders.map(folder => (
+                <div key={folder} className="folder-item" onClick={() => enterFolder(folder)}>
+                  📁 {folder}
+                </div>
+              ))}
+            </div>
+
             <ul className="file-list">
-              {files.map(file => (
+              {fileList.map(file => (
                 <li key={file.id} className="file-item">
-                  <span>{file.filename}</span>
+                  <span>{file.filename.split("/").pop()}</span>
                   <div>
                     <button onClick={() => handleDownload(file)}>⬇</button>
                     <button onClick={() => handleFileDelete(file.id)}>🗑</button>
                   </div>
                 </li>
               ))}
+              {folders.length === 0 && fileList.length === 0 && <p>No files or folders here.</p>}
             </ul>
           </section>
         )}
