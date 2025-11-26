@@ -1,4 +1,3 @@
-// PayAsYouGoCloudApp.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { apiFetch } from "./api";
 import {
@@ -15,8 +14,9 @@ import {
   FiHome,
   FiChevronLeft,
   FiEye,
+  FiUsers,
 } from "react-icons/fi";
-import "./App.css"; // or "./App.css" if that's what you're using
+import "./App.css";
 
 const LS_TOKEN = "payg_accessToken";
 
@@ -32,7 +32,17 @@ export default function PayAsYouGoCloudApp() {
   const [error, setError] = useState("");
   const [pathStack, setPathStack] = useState([]); // folder path navigation
 
+  // --- admin state ---
+  const [adminSummary, setAdminSummary] = useState(null);
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [adminUserId, setAdminUserId] = useState("");
+  const [adminUserDetails, setAdminUserDetails] = useState(null);
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [adminError, setAdminError] = useState("");
+
   const fileInputRef = useRef(null);
+
+  const isAdmin = user?.email === "admin@test.com";
 
   // --- Authentication ---
   async function handleLogin(e) {
@@ -104,7 +114,7 @@ export default function PayAsYouGoCloudApp() {
     }
   }
 
-  // --- Folder structure logic (from your latest code) ---
+  // --- Folder structure logic ---
   const currentPath = pathStack.join("/");
   const foldersSet = new Set();
   const fileList = [];
@@ -124,7 +134,7 @@ export default function PayAsYouGoCloudApp() {
       } else {
         foldersSet.add(folderParts[0]);
       }
-      return; // don't show dummy itself
+      return;
     }
 
     // If file belongs to current path
@@ -132,10 +142,8 @@ export default function PayAsYouGoCloudApp() {
       const pathParts = currentPath.split("/");
       if (parts.slice(0, pathParts.length).join("/") === currentPath) {
         if (parts.length === pathParts.length + 1) {
-          // direct child file
           fileList.push(f);
         } else {
-          // file inside subfolder of current path
           const nextFolder = parts[pathParts.length];
           if (nextFolder) foldersSet.add(nextFolder);
         }
@@ -152,7 +160,7 @@ export default function PayAsYouGoCloudApp() {
 
   const folders = Array.from(foldersSet);
 
-  // --- Create Folder (same logic as your snippet) ---
+  // --- Create Folder ---
   async function handleCreateFolder() {
     const folder = prompt("Enter new folder name:");
     if (!folder) return;
@@ -209,7 +217,6 @@ export default function PayAsYouGoCloudApp() {
     } catch (err) {
       setError(err.message);
     } finally {
-      // allow re-uploading same file
       e.target.value = "";
     }
   }
@@ -230,7 +237,7 @@ export default function PayAsYouGoCloudApp() {
     );
   }
 
-  // --- Quick View / Preview (from your snippet) ---
+  // --- Quick View / Preview ---
   async function handleView(file) {
     try {
       const response = await fetch(
@@ -248,9 +255,7 @@ export default function PayAsYouGoCloudApp() {
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      window.open(url, "_blank"); // open preview in new tab
-
-      // optional cleanup after some time
+      window.open(url, "_blank");
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch (err) {
       console.error("Error viewing file:", err);
@@ -281,7 +286,56 @@ export default function PayAsYouGoCloudApp() {
     100
   );
 
-  // --- Auth UI (modern look) ---
+  // --- Admin API handlers (buttons) ---
+  async function fetchAdminSummary() {
+    if (!isAdmin) return;
+    setAdminLoading(true);
+    setAdminError("");
+    try {
+      const res = await apiFetch("/admin/summary", {}, token);
+      setAdminSummary(res);
+    } catch (err) {
+      setAdminError(err.message || "Failed to load summary");
+    } finally {
+      setAdminLoading(false);
+    }
+  }
+
+  async function fetchAdminUsers() {
+    if (!isAdmin) return;
+    setAdminLoading(true);
+    setAdminError("");
+    try {
+      const res = await apiFetch("/admin/users", {}, token);
+      setAdminUsers(res);
+    } catch (err) {
+      setAdminError(err.message || "Failed to load users");
+    } finally {
+      setAdminLoading(false);
+    }
+  }
+
+  async function fetchAdminUserById() {
+    if (!isAdmin) return;
+    const trimmed = adminUserId.trim();
+    if (!trimmed) {
+      setAdminError("Please enter a user ID.");
+      return;
+    }
+    setAdminLoading(true);
+    setAdminError("");
+    try {
+      const res = await apiFetch(`/admin/users/${trimmed}`, {}, token);
+      setAdminUserDetails(res);
+    } catch (err) {
+      setAdminUserDetails(null);
+      setAdminError(err.message || "Failed to load user");
+    } finally {
+      setAdminLoading(false);
+    }
+  }
+
+  // --- Auth UI ---
   if (!token)
     return (
       <div className="auth-container fade-in">
@@ -343,6 +397,9 @@ export default function PayAsYouGoCloudApp() {
           </div>
           <div className="app-title-block">
             <h1>Pay-as-you-go Cloud</h1>
+            <span className="app-subtitle">
+              Personal object storage — Google Drive–style UI, AWS-style billing
+            </span>
           </div>
         </div>
 
@@ -412,6 +469,24 @@ export default function PayAsYouGoCloudApp() {
                 <FiUser />
                 <span>Profile</span>
               </button>
+
+              {/* Admin nav only for admin@test.com */}
+              {isAdmin && (
+                <>
+                  <p className="sidebar-section-label sidebar-section-label-admin">
+                    Admin
+                  </p>
+                  <button
+                    className={`sidebar-item ${
+                      activeTab === "admin" ? "active" : ""
+                    }`}
+                    onClick={() => setActiveTab("admin")}
+                  >
+                    <FiUsers />
+                    <span>Admin panel</span>
+                  </button>
+                </>
+              )}
             </nav>
           </div>
 
@@ -505,48 +580,49 @@ export default function PayAsYouGoCloudApp() {
                 {fileList.length > 0 ? (
                   <div className="files-grid">
                     {fileList.map((file) => {
-  const name = file.filename.split("/").pop();
-  return (
-    <div key={file.id} className="file-card file-card-file">
-      <div className="file-card-main">
-        <div className="file-icon-wrapper">
-          <FiFileText />
-        </div>
-        <div className="file-meta">
-          <span className="file-name" title={name}>
-            {name}
-          </span>
-          <span className="file-subtext">ID: {file.id}</span>
-        </div>
-      </div>
+                      const name = file.filename.split("/").pop();
+                      return (
+                        <div key={file.id} className="file-card file-card-file">
+                          <div className="file-card-main">
+                            <div className="file-icon-wrapper">
+                              <FiFileText />
+                            </div>
+                            <div className="file-meta">
+                              <span className="file-name" title={name}>
+                                {name}
+                              </span>
+                              <span className="file-subtext">
+                                ID: {file.id}
+                              </span>
+                            </div>
+                          </div>
 
-      {/* icons on a new line */}
-      <div className="file-card-actions file-card-actions-bottom">
-        <button
-          className="icon-btn light"
-          onClick={() => handleView(file)}
-          title="Quick view"
-        >
-          <FiEye />
-        </button>
-        <button
-          className="icon-btn light"
-          onClick={() => handleDownload(file)}
-          title="Download"
-        >
-          <FiDownload />
-        </button>
-        <button
-          className="icon-btn danger"
-          onClick={() => handleFileDelete(file.id)}
-          title="Delete"
-        >
-          <FiTrash2 />
-        </button>
-      </div>
-    </div>
-  );
-})}
+                          <div className="file-card-actions file-card-actions-bottom">
+                            <button
+                              className="icon-btn light"
+                              onClick={() => handleView(file)}
+                              title="Quick view"
+                            >
+                              <FiEye />
+                            </button>
+                            <button
+                              className="icon-btn light"
+                              onClick={() => handleDownload(file)}
+                              title="Download"
+                            >
+                              <FiDownload />
+                            </button>
+                            <button
+                              className="icon-btn danger"
+                              onClick={() => handleFileDelete(file.id)}
+                              title="Delete"
+                            >
+                              <FiTrash2 />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
                   folders.length === 0 && (
@@ -637,6 +713,182 @@ export default function PayAsYouGoCloudApp() {
                   <span className="profile-value">{user.id}</span>
                 </div>
               </div>
+            </section>
+          )}
+
+          {/* -------- Admin tab (only for admin@test.com) -------- */}
+          {activeTab === "admin" && isAdmin && (
+            <section className="card admin-tab">
+              <h2>Admin panel</h2>
+              <p className="card-subtitle">
+                Site-wide usage, users list, and per-user billing.  
+                These endpoints require <code>admin@test.com</code>.
+              </p>
+
+              {adminError && (
+                <div className="inline-error admin-error">{adminError}</div>
+              )}
+
+              <div className="admin-actions-row">
+                <button
+                  className="primary-btn admin-btn"
+                  onClick={fetchAdminSummary}
+                  disabled={adminLoading}
+                >
+                  Get summary
+                </button>
+
+                <button
+                  className="secondary-btn admin-btn"
+                  onClick={fetchAdminUsers}
+                  disabled={adminLoading}
+                >
+                  List all users
+                </button>
+
+                <div className="admin-userid-group">
+                  <label>
+                    <span>User ID</span>
+                    <input
+                      type="number"
+                      className="admin-input"
+                      value={adminUserId}
+                      onChange={(e) => setAdminUserId(e.target.value)}
+                      placeholder="e.g. 1"
+                    />
+                  </label>
+                  <button
+                    className="secondary-btn admin-btn"
+                    onClick={fetchAdminUserById}
+                    disabled={adminLoading}
+                  >
+                    Get user by ID
+                  </button>
+                </div>
+              </div>
+
+              {/* Summary block */}
+              {adminSummary && (
+                <div className="admin-summary">
+                  <h3>Site summary</h3>
+                  <div className="billing-grid">
+                    <div className="billing-item">
+                      <span className="billing-label">Total users</span>
+                      <span className="billing-value">
+                        {adminSummary.totalUsers}
+                      </span>
+                    </div>
+                    <div className="billing-item">
+                      <span className="billing-label">Total storage (GB)</span>
+                      <span className="billing-value">
+                        {adminSummary.totalStorageGb}
+                      </span>
+                    </div>
+                    <div className="billing-item">
+                      <span className="billing-label">Total objects</span>
+                      <span className="billing-value">
+                        {adminSummary.totalObjects}
+                      </span>
+                    </div>
+                    <div className="billing-item">
+                      <span className="billing-label">
+                        Est. monthly revenue
+                      </span>
+                      <span className="billing-value">
+                        {adminSummary.estimatedMonthlyRevenue}{" "}
+                        {adminSummary.currency}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Users table */}
+              {adminUsers && adminUsers.length > 0 && (
+                <div className="admin-users">
+                  <h3>All users</h3>
+                  <div className="admin-table-wrapper">
+                    <table className="admin-users-table">
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Email</th>
+                          <th>Name</th>
+                          <th>Created</th>
+                          <th>Storage (GB)</th>
+                          <th>Objects</th>
+                          <th>Billing total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {adminUsers.map((u) => (
+                          <tr key={u.id}>
+                            <td>{u.id}</td>
+                            <td>{u.email}</td>
+                            <td>{u.fullName || "—"}</td>
+                            <td>{u.createdAt}</td>
+                            <td>{u.totalGb}</td>
+                            <td>{u.objectCount}</td>
+                            <td>
+                              {u.billing?.total} {u.billing?.currency}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Single user details */}
+              {adminUserDetails && (
+                <div className="admin-single-user">
+                  <h3>User details (ID: {adminUserDetails.id})</h3>
+                  <div className="profile-grid">
+                    <div className="profile-row">
+                      <span className="profile-label">Email</span>
+                      <span className="profile-value">
+                        {adminUserDetails.email}
+                      </span>
+                    </div>
+                    <div className="profile-row">
+                      <span className="profile-label">Full name</span>
+                      <span className="profile-value">
+                        {adminUserDetails.fullName || "—"}
+                      </span>
+                    </div>
+                    <div className="profile-row">
+                      <span className="profile-label">Created at</span>
+                      <span className="profile-value">
+                        {adminUserDetails.createdAt}
+                      </span>
+                    </div>
+                    <div className="profile-row">
+                      <span className="profile-label">Storage (GB)</span>
+                      <span className="profile-value">
+                        {adminUserDetails.totalGb}
+                      </span>
+                    </div>
+                    <div className="profile-row">
+                      <span className="profile-label">Objects</span>
+                      <span className="profile-value">
+                        {adminUserDetails.objectCount}
+                      </span>
+                    </div>
+                    <div className="profile-row">
+                      <span className="profile-label">Current bill</span>
+                      <span className="profile-value">
+                        {adminUserDetails.billing?.total}{" "}
+                        {adminUserDetails.billing?.currency}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {adminLoading && (
+                <p className="admin-loading">Loading admin data…</p>
+              )}
             </section>
           )}
         </main>

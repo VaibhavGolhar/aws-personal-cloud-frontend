@@ -779,3 +779,161 @@ body {
   margin-top: 6px;
   justify-content: flex-start;
 }
+
+/* admin section label in sidebar */
+.sidebar-section-label-admin {
+  margin-top: 10px;
+}
+
+/* file card tweaks already done earlier */
+.file-card-file {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.file-name {
+  font-size: 0.88rem;
+  font-weight: 500;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.file-card-actions-bottom {
+  margin-top: 6px;
+  justify-content: flex-start;
+}
+
+/* --- Admin tab layout --- */
+.admin-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.admin-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+  margin-bottom: 4px;
+}
+
+.admin-btn {
+  font-size: 0.8rem;
+}
+
+.admin-userid-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: flex-end;
+}
+
+.admin-userid-group label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.76rem;
+  color: #6b7280;
+}
+
+.admin-input {
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  padding: 6px 9px;
+  font-size: 0.8rem;
+  min-width: 90px;
+}
+
+/* -------------------- ADMIN TABLE (FINAL) -------------------- */
+
+.admin-table-wrapper {
+  margin-top: 12px;
+  max-height: 260px;
+  overflow: auto;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+/* full-width modern table */
+.admin-users-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  table-layout: fixed;
+}
+
+.admin-users-table thead {
+  background: #f3f4f6;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.admin-users-table th,
+.admin-users-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  border-right: 1px solid #e5e7eb;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: #fff;
+}
+
+/* remove last column border */
+.admin-users-table th:last-child,
+.admin-users-table td:last-child {
+  border-right: none;
+}
+
+/* header style */
+.admin-users-table th {
+  font-weight: 600;
+  color: #374151;
+}
+
+/* zebra stripes */
+.admin-users-table tbody tr:nth-child(even) {
+  background: #f9fafb;
+}
+
+/* numeric columns aligned right: ID, Storage, Objects, Billing */
+.admin-users-table th:nth-child(1),
+.admin-users-table td:nth-child(1),
+.admin-users-table th:nth-child(5),
+.admin-users-table td:nth-child(5),
+.admin-users-table th:nth-child(6),
+.admin-users-table td:nth-child(6),
+.admin-users-table th:nth-child(7),
+.admin-users-table td:nth-child(7) {
+  text-align: right;
+}
+
+/* slightly wider email column */
+.admin-users-table th:nth-child(2),
+.admin-users-table td:nth-child(2) {
+  max-width: 220px;
+}
+
+/* section titles */
+.admin-summary h3,
+.admin-users h3,
+.admin-single-user h3 {
+  margin: 12px 0 6px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* loading + error text */
+.admin-loading {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.admin-error {
+  margin-bottom: 6px;
+  color: #dc2626;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
