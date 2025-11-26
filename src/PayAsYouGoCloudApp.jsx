@@ -1,5 +1,20 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { apiFetch } from "./api";
+import {
+  FiCloud,
+  FiFolder,
+  FiFileText,
+  FiUpload,
+  FiFolderPlus,
+  FiDownload,
+  FiTrash2,
+  FiLogOut,
+  FiUser,
+  FiCreditCard,
+  FiHome,
+  FiChevronLeft,
+} from "react-icons/fi";
+import "./PayAsYouGoCloudApp.css";
 
 const LS_TOKEN = "payg_accessToken";
 
@@ -14,6 +29,8 @@ export default function PayAsYouGoCloudApp() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [pathStack, setPathStack] = useState([]); // folder path navigation
+
+  const fileInputRef = useRef(null);
 
   // --- Authentication ---
   async function handleLogin(e) {
@@ -76,24 +93,26 @@ export default function PayAsYouGoCloudApp() {
   }, [token]);
 
   async function refreshFiles() {
-  try {
-    const f = await apiFetch("/files", {}, token);
-    console.log("Fetched files:", f);
-    setFiles(f);
-  } catch (err) {
-    console.error("Failed to fetch files:", err);
+    try {
+      const f = await apiFetch("/files", {}, token);
+      console.log("Fetched files:", f);
+      setFiles(f);
+    } catch (err) {
+      console.error("Failed to fetch files:", err);
+    }
   }
-}
 
   // --- File & folder helpers ---
   const currentPath = pathStack.join("/");
 
   // Build hierarchical structure
-  const visibleFiles = files.filter(f => !f.filename.endsWith("/dummyfile.txt"));
+  const visibleFiles = files.filter(
+    (f) => !f.filename.endsWith("/dummyfile.txt")
+  );
   const foldersSet = new Set();
   const fileList = [];
 
-  visibleFiles.forEach(f => {
+  visibleFiles.forEach((f) => {
     const parts = f.filename.split("/");
     if (parts.length > 1) {
       // it's inside folder(s)
@@ -101,7 +120,11 @@ export default function PayAsYouGoCloudApp() {
         const pathParts = currentPath.split("/");
         if (parts.slice(0, pathParts.length).join("/") === currentPath) {
           const nextPart = parts[pathParts.length];
-          if (nextPart && !nextPart.endsWith(".txt") && parts.length > pathParts.length + 1) {
+          if (
+            nextPart &&
+            !nextPart.endsWith(".txt") &&
+            parts.length > pathParts.length + 1
+          ) {
             foldersSet.add(nextPart);
           } else if (nextPart && parts.length === pathParts.length + 1) {
             fileList.push(f);
@@ -152,6 +175,9 @@ export default function PayAsYouGoCloudApp() {
       await refreshFiles();
     } catch (err) {
       setError(err.message);
+    } finally {
+      // reset input so uploading same file twice works
+      e.target.value = "";
     }
   }
 
@@ -165,7 +191,10 @@ export default function PayAsYouGoCloudApp() {
   }
 
   function handleDownload(file) {
-    window.open(`http://localhost:8080/api/files/${file.id}/download`, "_blank");
+    window.open(
+      `http://localhost:8080/api/files/${file.id}/download`,
+      "_blank"
+    );
   }
 
   // --- Navigation ---
@@ -177,35 +206,67 @@ export default function PayAsYouGoCloudApp() {
     setPathStack(pathStack.slice(0, -1));
   }
 
+  function triggerUpload() {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  }
+
+  // --- Storage meter (sidebar bottom) ---
+  const maxStorageGb = 100;
+  const usedStorageGb = billing?.storageGb ?? 0;
+  const storagePercent = Math.min(
+    (usedStorageGb / maxStorageGb) * 100,
+    100
+  );
+
   // --- Auth UI ---
   if (!token)
     return (
       <div className="auth-container fade-in">
         <div className="auth-card">
-          <h1>Welcome</h1>
-          <p>Pay-as-you-go personal cloud — inspired by Google Drive.</p>
-          {error && <p className="error">{error}</p>}
-          <form onSubmit={handleLogin}>
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-            />
-            <button type="submit" disabled={loading}>
+          <div className="auth-logo-row">
+            <div className="auth-logo-circle">
+              <FiCloud />
+            </div>
+            <div>
+              <h1>Pay-as-you-go Cloud</h1>
+              <p className="auth-subtitle">
+                Minimal personal storage, billed like AWS S3.
+              </p>
+            </div>
+          </div>
+
+          {error && <p className="error-badge">{error}</p>}
+
+          <form onSubmit={handleLogin} className="auth-form">
+            <label>
+              <span>Email</span>
+              <input
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </label>
+            <label>
+              <span>Password</span>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </label>
+            <button type="submit" className="primary-btn" disabled={loading}>
               {loading ? "Logging in..." : "Log in"}
             </button>
           </form>
-          <button className="link-btn" onClick={handleRegister}>
-            Create account
+
+          <button className="ghost-btn" onClick={handleRegister}>
+            New here? <span>Create account</span>
           </button>
         </div>
       </div>
@@ -213,85 +274,292 @@ export default function PayAsYouGoCloudApp() {
 
   // --- Main UI ---
   return (
-    <div className="main-container fade-in">
-      <header>
-        <h2>☁ Pay-as-you-go Cloud</h2>
-        <nav>
-          <button onClick={() => setActiveTab("files")} className={activeTab === "files" ? "active" : ""}>
-            Files
+    <div className="app-root fade-in">
+      <header className="app-header">
+        <div className="app-header-left">
+          <div className="app-logo">
+            <FiCloud />
+          </div>
+          <div className="app-title-block">
+            <h1>Pay-as-you-go Cloud</h1>
+            <span className="app-subtitle">
+              Personal object storage — Google Drive–style UI, AWS-style billing
+            </span>
+          </div>
+        </div>
+
+        <div className="app-header-right">
+          {user && (
+            <div className="user-chip">
+              <div className="user-avatar">
+                {user.email?.[0]?.toUpperCase() || "U"}
+              </div>
+              <div className="user-meta">
+                <span className="user-name">
+                  {user.fullName || "Cloud User"}
+                </span>
+                <span className="user-email">{user.email}</span>
+              </div>
+            </div>
+          )}
+          <button className="icon-btn logout-btn" onClick={handleLogout}>
+            <FiLogOut />
+            <span>Logout</span>
           </button>
-          <button onClick={() => setActiveTab("billing")} className={activeTab === "billing" ? "active" : ""}>
-            Billing
-          </button>
-          <button onClick={() => setActiveTab("profile")} className={activeTab === "profile" ? "active" : ""}>
-            Profile
-          </button>
-        </nav>
-        <button className="logout-btn" onClick={handleLogout}>
-          Logout
-        </button>
+        </div>
       </header>
 
-      <main className="tab-content fade-in">
-        {activeTab === "files" && (
-          <section className="files-tab">
-            <div className="folder-path">
-              {pathStack.length > 0 && (
-                <button className="back-btn" onClick={goBack}>
-                  ⬅ Back
-                </button>
-              )}
-              <span>/{pathStack.join("/")}</span>
-            </div>
+      <div className="app-shell">
+        {/* Sidebar */}
+        <aside className="sidebar">
+          <div>
+            <button className="primary-btn sidebar-new" onClick={triggerUpload}>
+              <FiUpload />
+              <span>New upload</span>
+            </button>
+            <button
+              className="secondary-btn sidebar-new-folder"
+              onClick={handleCreateFolder}
+            >
+              <FiFolderPlus />
+              <span>New folder</span>
+            </button>
 
-            <div className="file-controls">
-              <input type="file" onChange={handleFileUpload} />
-              <button onClick={handleCreateFolder}>+ New Folder</button>
-            </div>
+            <nav className="sidebar-nav">
+              <p className="sidebar-section-label">Navigation</p>
+              <button
+                className={`sidebar-item ${
+                  activeTab === "files" ? "active" : ""
+                }`}
+                onClick={() => setActiveTab("files")}
+              >
+                <FiHome />
+                <span>My Files</span>
+              </button>
+              <button
+                className={`sidebar-item ${
+                  activeTab === "billing" ? "active" : ""
+                }`}
+                onClick={() => setActiveTab("billing")}
+              >
+                <FiCreditCard />
+                <span>Billing</span>
+              </button>
+              <button
+                className={`sidebar-item ${
+                  activeTab === "profile" ? "active" : ""
+                }`}
+                onClick={() => setActiveTab("profile")}
+              >
+                <FiUser />
+                <span>Profile</span>
+              </button>
+            </nav>
+          </div>
 
-            <div className="folder-list">
-              {folders.map(folder => (
-                <div key={folder} className="folder-item" onClick={() => enterFolder(folder)}>
-                  📁 {folder}
+          {/* Storage meter bottom-left */}
+          <div className="storage-card">
+            <div className="storage-header">
+              <span className="storage-title">Storage</span>
+              <FiCloud className="storage-icon" />
+            </div>
+            <div className="storage-bar-outer">
+              <div
+                className="storage-bar-inner"
+                style={{ width: `${storagePercent || 0}%` }}
+              ></div>
+            </div>
+            <div className="storage-meta-row">
+              <span className="storage-amount">
+                {usedStorageGb.toFixed(2)} GB / {maxStorageGb} GB
+              </span>
+              <span className="storage-percent">
+                {storagePercent ? storagePercent.toFixed(0) : 0}%
+              </span>
+            </div>
+            <p className="storage-caption">
+              Billed pay-as-you-go from your usage.
+            </p>
+          </div>
+        </aside>
+
+        {/* Main content */}
+        <main className="main-content">
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden-file-input"
+            onChange={handleFileUpload}
+          />
+
+          {error && <div className="inline-error">{error}</div>}
+
+          {activeTab === "files" && (
+            <section className="files-tab">
+              <div className="files-header-row">
+                <div className="breadcrumbs">
+                  {pathStack.length > 0 ? (
+                    <button className="back-chip" onClick={goBack}>
+                      <FiChevronLeft />
+                      <span>Back</span>
+                    </button>
+                  ) : (
+                    <div className="back-chip back-chip-disabled">
+                      <FiHome />
+                      <span>Root</span>
+                    </div>
+                  )}
+                  <span className="path-text">
+                    /{pathStack.join("/") || ""}
+                  </span>
                 </div>
-              ))}
-            </div>
+              </div>
 
-            <ul className="file-list">
-              {fileList.map(file => (
-                <li key={file.id} className="file-item">
-                  <span>{file.filename.split("/").pop()}</span>
-                  <div>
-                    <button onClick={() => handleDownload(file)}>⬇</button>
-                    <button onClick={() => handleFileDelete(file.id)}>🗑</button>
+              <div className="folders-row">
+                {folders.length > 0 &&
+                  folders.map((folder) => (
+                    <button
+                      key={folder}
+                      className="folder-card"
+                      onClick={() => enterFolder(folder)}
+                    >
+                      <div className="folder-icon-wrapper">
+                        <FiFolder />
+                      </div>
+                      <span className="folder-name">{folder}</span>
+                    </button>
+                  ))}
+              </div>
+
+              <div className="files-list-wrapper">
+                {fileList.length > 0 ? (
+                  <div className="files-grid">
+                    {fileList.map((file) => {
+                      const name = file.filename.split("/").pop();
+                      return (
+                        <div key={file.id} className="file-card">
+                          <div className="file-card-main">
+                            <div className="file-icon-wrapper">
+                              <FiFileText />
+                            </div>
+                            <div className="file-meta">
+                              <span className="file-name" title={name}>
+                                {name}
+                              </span>
+                              <span className="file-subtext">
+                                ID: {file.id}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="file-card-actions">
+                            <button
+                              className="icon-btn light"
+                              onClick={() => handleDownload(file)}
+                            >
+                              <FiDownload />
+                            </button>
+                            <button
+                              className="icon-btn danger"
+                              onClick={() => handleFileDelete(file.id)}
+                            >
+                              <FiTrash2 />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                </li>
-              ))}
-              {folders.length === 0 && fileList.length === 0 && <p>No files or folders here.</p>}
-            </ul>
-          </section>
-        )}
+                ) : (
+                  <div className="empty-state">
+                    <div className="empty-icon">
+                      <FiFolder />
+                    </div>
+                    <h3>No files or folders here</h3>
+                    <p>
+                      Use <strong>New upload</strong> or{" "}
+                      <strong>New folder</strong> in the sidebar to get
+                      started.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
 
-        {activeTab === "billing" && billing && (
-          <section className="billing-tab">
-            <h3>Billing Summary</h3>
-            <p>Storage used: {billing.storageGb} GB</p>
-            <p>Storage cost: ${billing.storageCost}</p>
-            <p>Read requests: {billing.readRequests} (${billing.readCost})</p>
-            <p>Write requests: {billing.writeRequests} (${billing.writeCost})</p>
-            <h4>Total: ${billing.total} {billing.currency}</h4>
-          </section>
-        )}
+          {activeTab === "billing" && billing && (
+            <section className="billing-tab card">
+              <h2>Billing summary</h2>
+              <p className="card-subtitle">
+                Transparent, pay-as-you-go usage metrics.
+              </p>
 
-        {activeTab === "profile" && user && (
-          <section className="profile-tab">
-            <h3>Profile</h3>
-            <p><strong>Name:</strong> {user.fullName || "—"}</p>
-            <p><strong>Email:</strong> {user.email}</p>
-            <p><strong>User ID:</strong> {user.id}</p>
-          </section>
-        )}
-      </main>
+              <div className="billing-grid">
+                <div className="billing-item">
+                  <span className="billing-label">Storage used</span>
+                  <span className="billing-value">
+                    {billing.storageGb} GB
+                  </span>
+                </div>
+                <div className="billing-item">
+                  <span className="billing-label">Storage cost</span>
+                  <span className="billing-value">
+                    ${billing.storageCost}
+                  </span>
+                </div>
+                <div className="billing-item">
+                  <span className="billing-label">
+                    Read requests (cost)
+                  </span>
+                  <span className="billing-value">
+                    {billing.readRequests} (${billing.readCost})
+                  </span>
+                </div>
+                <div className="billing-item">
+                  <span className="billing-label">
+                    Write requests (cost)
+                  </span>
+                  <span className="billing-value">
+                    {billing.writeRequests} (${billing.writeCost})
+                  </span>
+                </div>
+              </div>
+
+              <div className="billing-total-row">
+                <span>Total</span>
+                <span className="billing-total">
+                  ${billing.total} {billing.currency}
+                </span>
+              </div>
+            </section>
+          )}
+
+          {activeTab === "profile" && user && (
+            <section className="profile-tab card">
+              <h2>Profile</h2>
+              <p className="card-subtitle">
+                Your identity on the pay-as-you-go cloud.
+              </p>
+
+              <div className="profile-grid">
+                <div className="profile-row">
+                  <span className="profile-label">Name</span>
+                  <span className="profile-value">
+                    {user.fullName || "—"}
+                  </span>
+                </div>
+                <div className="profile-row">
+                  <span className="profile-label">Email</span>
+                  <span className="profile-value">{user.email}</span>
+                </div>
+                <div className="profile-row">
+                  <span className="profile-label">User ID</span>
+                  <span className="profile-value">{user.id}</span>
+                </div>
+              </div>
+            </section>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
