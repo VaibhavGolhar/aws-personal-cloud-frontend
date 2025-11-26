@@ -240,7 +240,7 @@ export default function PayAsYouGoCloudApp() {
       <div className="auth-container fade-in">
         <div className="auth-card">
           <h1>Welcome</h1>
-          <p>Pay-as-you-go personal cloud — inspired by Google Drive.</p>
+          <p>Pay-as-you-go personal cloud</p>
           {error && <p className="error">{error}</p>}
           <form onSubmit={handleLogin}>
             <input
