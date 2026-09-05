@@ -109,6 +109,29 @@ export default function useFiles(token) {
     }
   }
 
+  async function uploadBulkFiles(filesToUpload) {
+    const form = new FormData();
+    for (let i = 0; i < filesToUpload.length; i++) {
+      const file = filesToUpload[i];
+      // If uploading a folder, file.webkitRelativePath will have the relative path
+      const pathPart = file.webkitRelativePath || file.name;
+      const filePath = currentPath ? `${currentPath}/${pathPart}` : pathPart;
+      form.append("files", file, filePath);
+    }
+    
+    // Add current path so backend knows where to place them, but since we are sending it in filename (3rd arg of form.append), backend's `subPath` param isn't strictly necessary.
+    if (currentPath) {
+      form.append("path", currentPath);
+    }
+
+    try {
+      await apiFetch("/files/bulk", { method: "POST", body: form }, token);
+      await refreshFiles();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   async function deleteFile(id) {
     try {
       await apiFetch(`/files/${id}`, { method: "DELETE" }, token);
@@ -140,6 +163,34 @@ export default function useFiles(token) {
     }
   }
 
+  async function downloadBulkFiles(fileIds) {
+    if (!fileIds || fileIds.length === 0) return;
+    try {
+      const response = await fetch(`${API_BASE}/files/bulk-download`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(fileIds),
+      });
+      if (!response.ok) throw new Error(`Bulk download failed: ${response.statusText}`);
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "bulk-download.zip";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (err) {
+      console.error("Bulk download error:", err);
+      setError(err.message);
+    }
+  }
+
   async function viewFile(file) {
     try {
       const response = await fetch(`${API_BASE}/files/${file.id}/download`, {
@@ -167,7 +218,7 @@ export default function useFiles(token) {
     }
     const prefix = currentPath ? `${currentPath}/${name}` : name;
     const form = new FormData();
-    const dummy = new Blob([], { type: "text/plain" });
+    const dummy = new Blob(["dummy"], { type: "text/plain" });
     form.append("file", dummy, `${prefix}/dummyfile.txt`);
     try {
       await apiFetch("/files", { method: "POST", body: form }, token);
@@ -197,6 +248,48 @@ export default function useFiles(token) {
     }
   }
 
+  async function deleteBulk(selectedFiles, selectedFolders) {
+    if (selectedFiles.length === 0 && selectedFolders.length === 0) return;
+    const confirmDelete = window.confirm(
+      `Delete ${selectedFiles.length} file(s) and ${selectedFolders.length} folder(s)?`
+    );
+    if (!confirmDelete) return;
+
+    let ids = new Set(selectedFiles.map(f => f.id));
+    selectedFolders.forEach(folder => {
+      const folderPrefix = currentPath ? `${currentPath}/${folder}/` : `${folder}/`;
+      files.forEach(f => {
+        if (f.filename.startsWith(folderPrefix)) {
+          ids.add(f.id);
+        }
+      });
+    });
+
+    try {
+      for (const id of ids) {
+        await apiFetch(`/files/${id}`, { method: "DELETE" }, token);
+      }
+      await refreshFiles();
+    } catch (err) {
+      console.error("Error deleting bulk:", err);
+      setError(err.message);
+    }
+  }
+
+  async function downloadBulk(selectedFiles, selectedFolders) {
+    if (selectedFiles.length === 0 && selectedFolders.length === 0) return;
+    let ids = new Set(selectedFiles.map(f => f.id));
+    selectedFolders.forEach(folder => {
+      const folderPrefix = currentPath ? `${currentPath}/${folder}/` : `${folder}/`;
+      files.forEach(f => {
+        if (f.filename.startsWith(folderPrefix)) {
+          ids.add(f.id);
+        }
+      });
+    });
+    await downloadBulkFiles(Array.from(ids));
+  }
+
   function enterFolder(name) {
     setPathStack((prev) => [...prev, name]);
   }
@@ -216,8 +309,12 @@ export default function useFiles(token) {
     setError,
     refreshFiles,
     uploadFile,
+    uploadBulkFiles,
     deleteFile,
     downloadFile,
+    downloadBulkFiles,
+    downloadBulk,
+    deleteBulk,
     viewFile,
     createFolder,
     deleteFolder,

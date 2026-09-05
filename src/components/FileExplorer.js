@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   FiFolder,
   FiFileText,
@@ -9,24 +9,6 @@ import {
   FiEye,
 } from "react-icons/fi";
 
-/**
- * FileExplorer — Displays breadcrumb navigation, folder cards, and file cards.
- *
- * Receives all data and callbacks from the useFiles hook via props.
- * Does not manage any state of its own.
- *
- * @param {{
- *   folders: string[],
- *   fileList: object[],
- *   pathStack: string[],
- *   onEnterFolder: Function,
- *   onGoBack: Function,
- *   onView: Function,
- *   onDownload: Function,
- *   onDeleteFile: Function,
- *   onDeleteFolder: Function
- * }} props
- */
 export default function FileExplorer({
   folders,
   fileList,
@@ -37,7 +19,44 @@ export default function FileExplorer({
   onDownload,
   onDeleteFile,
   onDeleteFolder,
+  onDownloadBulk,
+  onDeleteBulk,
 }) {
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [selectedFolders, setSelectedFolders] = useState([]);
+
+  function toggleFile(file) {
+    if (selectedFiles.find(f => f.id === file.id)) {
+      setSelectedFiles(prev => prev.filter(f => f.id !== file.id));
+    } else {
+      setSelectedFiles(prev => [...prev, file]);
+    }
+  }
+
+  function toggleFolder(folder) {
+    if (selectedFolders.includes(folder)) {
+      setSelectedFolders(prev => prev.filter(f => f !== folder));
+    } else {
+      setSelectedFolders(prev => [...prev, folder]);
+    }
+  }
+
+  function handleBulkDownload() {
+    if (onDownloadBulk) {
+      onDownloadBulk(selectedFiles, selectedFolders);
+      setSelectedFiles([]);
+      setSelectedFolders([]);
+    }
+  }
+
+  function handleBulkDelete() {
+    if (onDeleteBulk) {
+      onDeleteBulk(selectedFiles, selectedFolders);
+      setSelectedFiles([]);
+      setSelectedFolders([]);
+    }
+  }
+
   return (
     <section className="files-tab">
       {/* Breadcrumb navigation */}
@@ -60,14 +79,38 @@ export default function FileExplorer({
         </div>
       </div>
 
+      {/* Bulk actions bar */}
+      {(selectedFiles.length > 0 || selectedFolders.length > 0) && (
+        <div className="bulk-actions-bar" style={{ display: 'flex', gap: '10px', alignItems: 'center', margin: '10px 0', padding: '10px', background: 'var(--card-bg)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+          <span style={{ fontWeight: 500, marginRight: 'auto' }}>
+            {selectedFiles.length} file(s) and {selectedFolders.length} folder(s) selected
+          </span>
+          <button className="primary-btn" onClick={handleBulkDownload}>
+            <FiDownload />
+            <span>Download Selected</span>
+          </button>
+          <button className="danger-btn" onClick={handleBulkDelete} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--danger-light)', color: 'var(--danger)', padding: '0.5rem 1rem', borderRadius: 'var(--radius)', border: 'none', cursor: 'pointer' }}>
+            <FiTrash2 />
+            <span>Delete Selected</span>
+          </button>
+        </div>
+      )}
+
       {/* Folder cards */}
       <div className="folders-row">
         {folders.length > 0 &&
           folders.map((folder) => (
             <div key={folder} className="file-card">
+              <input 
+                type="checkbox" 
+                checked={selectedFolders.includes(folder)} 
+                onChange={() => toggleFolder(folder)}
+                style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 1 }}
+              />
               <button
                 className="folder-card"
                 onClick={() => onEnterFolder(folder)}
+                style={{ paddingLeft: '30px' }}
               >
                 <div className="folder-icon-wrapper">
                   <FiFolder />
@@ -95,7 +138,13 @@ export default function FileExplorer({
               const name = file.filename.split("/").pop();
               return (
                 <div key={file.id} className="file-card file-card-file">
-                  <div className="file-card-main">
+                  <input 
+                    type="checkbox" 
+                    checked={!!selectedFiles.find(f => f.id === file.id)} 
+                    onChange={() => toggleFile(file)}
+                    style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 1 }}
+                  />
+                  <div className="file-card-main" style={{ paddingLeft: '30px' }}>
                     <div className="file-icon-wrapper">
                       <FiFileText />
                     </div>

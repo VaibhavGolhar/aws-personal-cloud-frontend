@@ -24,6 +24,7 @@ export default function App() {
   const fileOps = useFiles(token);
   const [activeTab, setActiveTab] = useState("files");
   const fileInputRef = useRef(null);
+  const folderInputRef = useRef(null);
 
   const isAdmin = user?.username === "admin";
 
@@ -43,10 +44,14 @@ export default function App() {
     fileInputRef.current?.click();
   }
 
+  function handleFolderUploadClick() {
+    folderInputRef.current?.click();
+  }
+
   function handleFileUpload(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    fileOps.uploadFile(file);
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    fileOps.uploadBulkFiles(files);
     e.target.value = "";
   }
 
@@ -64,6 +69,7 @@ export default function App() {
           activeTab={activeTab}
           onTabChange={setActiveTab}
           onUploadClick={handleUploadClick}
+          onUploadFolderClick={handleFolderUploadClick}
           onCreateFolder={handleCreateFolder}
           isAdmin={isAdmin}
           billing={fileOps.billing}
@@ -76,6 +82,16 @@ export default function App() {
             ref={fileInputRef}
             className="hidden-file-input"
             onChange={handleFileUpload}
+            multiple
+          />
+          <input
+            type="file"
+            ref={folderInputRef}
+            className="hidden-file-input"
+            onChange={handleFileUpload}
+            webkitdirectory="true"
+            directory="true"
+            multiple
           />
 
           {fileOps.error && (
@@ -93,6 +109,8 @@ export default function App() {
               onDownload={fileOps.downloadFile}
               onDeleteFile={fileOps.deleteFile}
               onDeleteFolder={fileOps.deleteFolder}
+              onDownloadBulk={fileOps.downloadBulk}
+              onDeleteBulk={fileOps.deleteBulk}
             />
           )}
 

@@ -14,10 +14,7 @@ export default function AppHeader({ user, onLogout }) {
           <FiCloud />
         </div>
         <div className="app-title-block">
-          <h1>Pay-as-you-go Cloud</h1>
-          <span className="app-subtitle">
-            Personal object storage — Google Drive–style UI, AWS-style billing
-          </span>
+          <h1>AWS Personal Cloud</h1>
         </div>
       </div>
 

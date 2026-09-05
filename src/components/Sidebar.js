@@ -16,6 +16,7 @@ import {
  *   activeTab: string,
  *   onTabChange: Function,
  *   onUploadClick: Function,
+ *   onUploadFolderClick: Function,
  *   onCreateFolder: Function,
  *   isAdmin: boolean,
  *   billing: object|null
@@ -25,6 +26,7 @@ export default function Sidebar({
   activeTab,
   onTabChange,
   onUploadClick,
+  onUploadFolderClick,
   onCreateFolder,
   isAdmin,
   billing,
@@ -38,7 +40,11 @@ export default function Sidebar({
       <div>
         <button className="primary-btn sidebar-new" onClick={onUploadClick}>
           <FiUpload />
-          <span>New upload</span>
+          <span>Upload files</span>
+        </button>
+        <button className="primary-btn sidebar-new" onClick={onUploadFolderClick}>
+          <FiUpload />
+          <span>Upload folder</span>
         </button>
         <button
           className="secondary-btn sidebar-new-folder"
