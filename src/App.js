@@ -230,11 +230,32 @@ export default function PayAsYouGoCloudApp() {
     }
   }
 
-  function handleDownload(file) {
-    window.open(
-      `http://localhost:8080/api/files/${file.id}/download`,
-      "_blank"
-    );
+  async function handleDownload(file) {
+    try {
+      const response = await fetch(
+        `http://localhost:8080/api/files/${file.id}/download`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = file.filename.split("/").pop() || "download";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (err) {
+      console.error("Download error:", err);
+      setError(err.message);
+    }
   }
 
   // --- Quick View / Preview ---
