@@ -37,14 +37,14 @@ export default function useAuth() {
     })();
   }, [token, logout]);
 
-  async function login(email, password) {
+  async function login(username, password) {
     setLoading(true);
     setError("");
     try {
       const data = await apiFetch("/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username, password }),
       });
       localStorage.setItem(LS_TOKEN, data.accessToken);
       setToken(data.accessToken);
@@ -55,14 +55,14 @@ export default function useAuth() {
     }
   }
 
-  async function register(email, password) {
+  async function register(username, password) {
     setLoading(true);
     setError("");
     try {
       const data = await apiFetch("/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username, password }),
       });
       localStorage.setItem(LS_TOKEN, data.accessToken);
       setToken(data.accessToken);

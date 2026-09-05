@@ -8,6 +8,7 @@ import FileExplorer from "./components/FileExplorer";
 import BillingTab from "./components/BillingTab";
 import ProfileTab from "./components/ProfileTab";
 import AdminPanel from "./components/AdminPanel";
+import ErrorAlert from "./components/ErrorAlert";
 import "./App.css";
 
 /**
@@ -24,7 +25,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("files");
   const fileInputRef = useRef(null);
 
-  const isAdmin = user?.email === "admin@test.com";
+  const isAdmin = user?.username === "admin";
 
   // Auth gate — show login page if no token
   if (!token) {
@@ -78,7 +79,7 @@ export default function App() {
           />
 
           {fileOps.error && (
-            <div className="inline-error">{fileOps.error}</div>
+            <ErrorAlert message={fileOps.error} />
           )}
 
           {activeTab === "files" && (

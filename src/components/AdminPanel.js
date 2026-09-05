@@ -157,7 +157,7 @@ export default function AdminPanel({ token, isAdmin }) {
               <thead>
                 <tr>
                   <th>ID</th>
-                  <th>Email</th>
+                  <th>Username</th>
                   <th>Name</th>
                   <th>Created</th>
                   <th>Storage (GB)</th>
@@ -169,7 +169,7 @@ export default function AdminPanel({ token, isAdmin }) {
                 {adminUsers.map((u) => (
                   <tr key={u.id}>
                     <td>{u.id}</td>
-                    <td>{u.email}</td>
+                    <td>{u.username}</td>
                     <td>{u.fullName || "—"}</td>
                     <td>{u.createdAt}</td>
                     <td>{u.totalGb}</td>
@@ -191,9 +191,9 @@ export default function AdminPanel({ token, isAdmin }) {
           <h3>User details (ID: {adminUserDetails.id})</h3>
           <div className="profile-grid">
             <div className="profile-row">
-              <span className="profile-label">Email</span>
+              <span className="profile-label">Username</span>
               <span className="profile-value">
-                {adminUserDetails.email}
+                {adminUserDetails.username}
               </span>
             </div>
             <div className="profile-row">

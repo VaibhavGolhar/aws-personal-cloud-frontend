@@ -153,13 +153,43 @@ body {
   font-weight: 500;
 }
 
-.error-badge {
+.error-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   background: #fee2e2;
   color: #b91c1c;
-  border-radius: 999px;
-  padding: 6px 10px;
-  font-size: 0.75rem;
-  margin-bottom: 8px;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  border: 1px solid #fecaca;
+  animation: fadeIn 0.3s ease;
+  word-break: break-word;
+}
+
+.error-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.error-text {
+  flex-grow: 1;
+  line-height: 1.4;
+}
+
+.error-close-btn {
+  background: none;
+  border: none;
+  color: #b91c1c;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0 0.25rem;
+  opacity: 0.7;
+}
+
+.error-close-btn:hover {
+  opacity: 1;
 }
 
 /* ---------- App shell ---------- */
@@ -249,7 +279,7 @@ body {
   font-weight: 600;
 }
 
-.user-email {
+.user-username {
   font-size: 0.72rem;
   color: #6b7280;
 }
@@ -910,7 +940,7 @@ body {
   text-align: right;
 }
 
-/* slightly wider email column */
+/* slightly wider username column */
 .admin-users-table th:nth-child(2),
 .admin-users-table td:nth-child(2) {
   max-width: 220px;

@@ -23,8 +23,8 @@ export default function ProfileTab({ user }) {
           <span className="profile-value">{user.fullName || "—"}</span>
         </div>
         <div className="profile-row">
-          <span className="profile-label">Email</span>
-          <span className="profile-value">{user.email}</span>
+          <span className="profile-label">Username</span>
+          <span className="profile-value">{user.username}</span>
         </div>
         <div className="profile-row">
           <span className="profile-label">User ID</span>

@@ -25,13 +25,13 @@ export default function AppHeader({ user, onLogout }) {
         {user && (
           <div className="user-chip">
             <div className="user-avatar">
-              {user.email?.[0]?.toUpperCase() || "U"}
+              {user.username?.[0]?.toUpperCase() || "U"}
             </div>
             <div className="user-meta">
               <span className="user-name">
                 {user.fullName || "Cloud User"}
               </span>
-              <span className="user-email">{user.email}</span>
+              <span className="user-username">{user.username}</span>
             </div>
           </div>
         )}

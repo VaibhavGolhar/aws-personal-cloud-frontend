@@ -1,26 +1,27 @@
 import React, { useState } from "react";
 import { FiCloud } from "react-icons/fi";
+import ErrorAlert from "./ErrorAlert";
 
 /**
  * AuthPage — Login/register form displayed when the user is not authenticated.
  *
- * Manages its own email/password local state since those fields are only
+ * Manages its own username/password local state since those fields are only
  * relevant to this component.
  *
  * @param {{ onLogin: Function, onRegister: Function, loading: boolean, error: string }} props
  */
 export default function AuthPage({ onLogin, onRegister, loading, error }) {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
   function handleLogin(e) {
     e.preventDefault();
-    onLogin(email, password);
+    onLogin(username, password);
   }
 
   function handleRegister(e) {
     e.preventDefault();
-    onRegister(email, password);
+    onRegister(username, password);
   }
 
   return (
@@ -38,16 +39,16 @@ export default function AuthPage({ onLogin, onRegister, loading, error }) {
           </div>
         </div>
 
-        {error && <p className="error-badge">{error}</p>}
+        {error && <ErrorAlert message={error} />}
 
         <form onSubmit={handleLogin} className="auth-form">
           <label>
-            <span>Email</span>
+            <span>Username</span>
             <input
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              placeholder="johndoe"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
             />
           </label>
