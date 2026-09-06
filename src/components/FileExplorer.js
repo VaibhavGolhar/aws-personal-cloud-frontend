@@ -21,6 +21,8 @@ export default function FileExplorer({
   onDeleteFolder,
   onDownloadBulk,
   onDeleteBulk,
+  hasMore,
+  onLoadMore,
 }) {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [selectedFolders, setSelectedFolders] = useState([]);
@@ -199,6 +201,18 @@ export default function FileExplorer({
               </p>
             </div>
           )
+        )}
+        
+        {hasMore && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+            <button 
+              className="primary-btn" 
+              onClick={onLoadMore}
+              style={{ padding: '8px 24px', fontSize: '1rem', minWidth: '150px' }}
+            >
+              Load More
+            </button>
+          </div>
         )}
       </div>
     </section>

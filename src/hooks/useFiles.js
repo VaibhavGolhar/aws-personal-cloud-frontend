@@ -17,19 +17,46 @@ export default function useFiles(token) {
   const [billing, setBilling] = useState(null);
   const [pathStack, setPathStack] = useState([]);
   const [error, setError] = useState("");
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const currentPath = pathStack.join("/");
 
   // Fetch files from the API
   const refreshFiles = useCallback(async () => {
     if (!token) return;
+    setIsLoading(true);
     try {
-      const f = await apiFetch("/files", {}, token);
-      setFiles(f);
+      const data = await apiFetch("/files?page=0&size=50", {}, token);
+      // Backend returns a Page object: data.content has the array
+      const newFiles = data.content || data; // Fallback in case of old API
+      setFiles(newFiles);
+      setPage(0);
+      setHasMore(data.totalPages ? data.totalPages > 1 : false);
     } catch (err) {
       console.error("Failed to fetch files:", err);
+    } finally {
+      setIsLoading(false);
     }
   }, [token]);
+
+  const loadMoreFiles = useCallback(async () => {
+    if (!token || !hasMore || isLoading) return;
+    setIsLoading(true);
+    try {
+      const nextPage = page + 1;
+      const data = await apiFetch(`/files?page=${nextPage}&size=50`, {}, token);
+      const newFiles = data.content || data;
+      setFiles(prev => [...prev, ...newFiles]);
+      setPage(nextPage);
+      setHasMore(data.totalPages ? nextPage < data.totalPages - 1 : false);
+    } catch (err) {
+      console.error("Failed to fetch more files:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [token, page, hasMore, isLoading]);
 
   // Fetch billing summary
   const refreshBilling = useCallback(async () => {
@@ -320,5 +347,7 @@ export default function useFiles(token) {
     deleteFolder,
     enterFolder,
     goBack,
+    hasMore,
+    loadMoreFiles,
   };
 }

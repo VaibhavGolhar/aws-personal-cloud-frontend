@@ -111,6 +111,8 @@ export default function App() {
               onDeleteFolder={fileOps.deleteFolder}
               onDownloadBulk={fileOps.downloadBulk}
               onDeleteBulk={fileOps.deleteBulk}
+              hasMore={fileOps.hasMore}
+              onLoadMore={fileOps.loadMoreFiles}
             />
           )}
 
